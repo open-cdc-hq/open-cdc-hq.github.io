@@ -1,23 +1,476 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- STUB: replace this whole file with open-changelog-format-blog-v2.html (renamed to index.html). -->
-<!-- The noindex line below keeps search engines from indexing the placeholder. It goes away when the file is replaced. -->
-<meta name="robots" content="noindex">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>An Open Changelog Format: The Missing Layer in the Open Data Stack</title>
+<meta name="description" content="Open file formats standardized how data is stored. Open table formats standardized how it's managed. The case for an open changelog format — the missing layer of the open data stack.">
+<link rel="canonical" href="https://open-cdc-hq.github.io/blog/open-changelog-format/">
+<meta property="og:title" content="An Open Changelog Format: The Missing Layer in the Open Data Stack">
+<meta property="og:description" content="The changelog feeding the open data stack is still a pile of incompatible tool dialects. Here's the case for the missing piece — and a draft specification that shows what one looks like.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://open-cdc-hq.github.io/blog/open-changelog-format/">
+<meta property="og:image" content="https://open-cdc-hq.github.io/blog/open-changelog-format/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="OpenCDC Working Group">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F7F9FA">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; }
-  body { font: 18px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
-  h1 { font-size: 1.8rem; line-height: 1.25; }
-  .byline { color: #666; }
+  :root{
+    --ink:#182028;
+    --paper:#F7F9FA;
+    --card:#FFFFFF;
+    --wire:#0E7C86;      /* signal teal */
+    --marker:#C77D00;    /* transaction-marker amber */
+    --muted:#5B6873;
+    --line:#D8DFE3;
+    --code-bg:#EFF3F4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4', Georgia, serif;
+    font-size:1.075rem;
+    line-height:1.72;
+  }
+  .wrap{max-width:740px;margin:0 auto;padding:0 1.25rem}
+
+  /* ---- hero ---- */
+  header{padding:4.5rem 0 3rem;border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--wire);margin-bottom:1.1rem
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;
+    font-size:clamp(1.9rem,4.5vw,2.7rem);line-height:1.12;letter-spacing:-.015em;
+    margin-bottom:1rem
+  }
+  .standfirst{font-size:1.15rem;color:var(--muted);max-width:38em}
+  .byline{
+    font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--muted);
+    margin-top:1.4rem
+  }
+  /* the signature: an event ribbon */
+  .ribbon{margin-top:2.2rem;overflow-x:auto;padding-bottom:.4rem}
+  .ribbon-inner{display:flex;align-items:center;gap:.45rem;min-width:max-content}
+  .chip{
+    font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.03em;
+    padding:.34rem .6rem;border:1px solid var(--line);border-radius:3px;
+    background:var(--card);white-space:nowrap
+  }
+  .chip.meta{border-color:var(--wire);color:var(--wire)}
+  .chip.mark{border-color:var(--marker);color:var(--marker)}
+  .arrow{color:var(--line);font-family:'IBM Plex Mono',monospace;font-size:.7rem}
+  .ribbon-caption{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);margin-top:.6rem}
+
+  /* ---- body ---- */
+  main{padding:2.6rem 0 4rem}
+  h2{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.45rem;
+    letter-spacing:-.01em;margin:2.8rem 0 .9rem
+  }
+  h3{
+    font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:1.08rem;
+    margin:2rem 0 .6rem
+  }
+  p{margin-bottom:1.05rem}
+  p.lede{font-size:1.14rem}
+  code{
+    font-family:'IBM Plex Mono',monospace;font-size:.86em;
+    background:var(--code-bg);padding:.1em .35em;border-radius:3px
+  }
+  a{color:var(--wire)}
+  figure{margin:1.9rem 0 2.1rem}
+  figure svg{width:100%;height:auto;display:block;background:var(--card);
+    border:1px solid var(--line);border-radius:6px}
+  figcaption{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);
+    margin-top:.55rem;line-height:1.5
+  }
+  .shape{
+    font-family:'IBM Plex Mono',monospace;font-size:.88em;background:var(--code-bg);
+    padding:.1em .35em;border-radius:3px;white-space:nowrap
+  }
+  .cta{
+    margin-top:3rem;padding:1.5rem 1.6rem;background:var(--card);
+    border:1px solid var(--line);border-left:3px solid var(--wire);border-radius:4px
+  }
+  .cta p{margin-bottom:.4rem}
+  footer{border-top:1px solid var(--line);padding:1.6rem 0 3rem}
+  footer p{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted)}
+  ::selection{background:#0E7C8622}
 </style>
 </head>
 <body>
-<p><a href="/">&larr; OpenCDC Working Group</a></p>
-<h1>An Open Changelog Format: The Missing Layer in the Open Data Stack</h1>
-<p class="byline">From the OpenCDC Working Group</p>
-<p>This post is being prepared for publication. Check back soon.</p>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Open Changelog Format</div>
+    <h1>An Open Changelog Format: The Missing Layer in the Open Data Stack</h1>
+    <p class="standfirst">Open file formats standardized how data is stored. Open table formats standardized how it's managed. The changelog that feeds them is still a pile of incompatible tool dialects. Here's the case for the missing piece — and a draft specification that shows what one looks like.</p>
+    <p class="byline">Authors: OpenCDC Working Group (Chris Cranford, Red Hat · Denis Gray, Oracle · Werner He, Oracle · Gunnar Morling, Confluent · Matthew O'Keefe, Independent · Jiri Pechanec, Red Hat · Jeff Pollock, Oracle · Shawn Robertson, IBM) · October 2026</p>
+    <div class="ribbon" aria-label="A conformant changelog stream">
+      <div class="ribbon-inner">
+        <span class="chip meta">STREAM_METADATA</span><span class="arrow">→</span>
+        <span class="chip meta">OBJECT_METADATA</span><span class="arrow">→</span>
+        <span class="chip">INSERT</span><span class="arrow">→</span>
+        <span class="chip">UPDATE</span><span class="arrow">→</span>
+        <span class="chip mark">TRX_COMMIT</span><span class="arrow">→</span>
+        <span class="chip">DDL</span><span class="arrow">→</span>
+        <span class="chip meta">HEARTBEAT</span>
+      </div>
+      <div class="ribbon-caption">A conformant stream carries its own schema, transaction boundaries, and liveness — as ordered events.</div>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <h2>Why an open change log matters</h2>
+
+  <p class="lede">The modern data stack opened from the bottom up. Open file formats — Parquet, ORC, Avro — standardized how data is encoded at rest, so any engine can read the bytes. Open table formats — Iceberg, Delta Lake, Hudi — standardized how those files behave as tables, so transactions, schema, and time travel stopped depending on any one vendor. Both wins came the same way: standardize the format, compete on the engine.</p>
+
+  <p>One layer never got the treatment: the changelog.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The open data stack: open file formats and open table formats are standardized layers; the changelog feeding them is the missing open layer.">
+      <style>
+        .st{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;fill:#182028}
+        .sv{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#5B6873}
+        .sw{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;fill:#0E7C86}
+        .nt{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#5B6873}
+        .solid{fill:#FFFFFF;stroke:#D8DFE3;stroke-width:1.2;rx:6}
+        .miss{fill:#F0FAFB;stroke:#0E7C86;stroke-width:1.6;stroke-dasharray:6 4;rx:6}
+        .db{fill:#FFFFFF;stroke:#D8DFE3;stroke-width:1.2;rx:6}
+        .flow{stroke:#0E7C86;stroke-width:1.6;fill:none}
+      </style>
+      <!-- source -->
+      <rect x="30" y="110" width="150" height="80" class="db"/>
+      <text x="52" y="145" class="st">Operational</text>
+      <text x="52" y="163" class="st">databases</text>
+      <!-- flow into changelog layer -->
+      <path d="M 180 150 L 235 150" class="flow"/>
+      <polygon points="235,150 226,145 226,155" fill="#0E7C86"/>
+      <text x="186" y="140" class="nt">changes</text>
+      <!-- stack -->
+      <rect x="240" y="40" width="430" height="66" class="miss"/>
+      <text x="262" y="68" class="sw">OPEN CHANGELOG FORMAT</text>
+      <text x="262" y="88" class="sv">? — the missing layer: change events in motion</text>
+      <rect x="240" y="122" width="430" height="66" class="solid"/>
+      <text x="262" y="150" class="st">OPEN TABLE FORMATS</text>
+      <text x="262" y="170" class="sv">Iceberg · Delta Lake · Hudi — tables, transactions, evolution</text>
+      <rect x="240" y="204" width="430" height="66" class="solid"/>
+      <text x="262" y="232" class="st">OPEN FILE FORMATS</text>
+      <text x="262" y="252" class="sv">Parquet · ORC · Avro — bytes at rest, readable by any engine</text>
+      <!-- arrows down the stack -->
+      <path d="M 300 106 L 300 122" class="flow"/><polygon points="300,122 295,114 305,114" fill="#0E7C86"/>
+      <path d="M 300 188 L 300 204" class="flow"/><polygon points="300,204 295,196 305,196" fill="#0E7C86"/>
+      <!-- reposition inflow to hit the changelog layer -->
+      <path d="M 205 150 Q 218 150 218 73 L 240 73" class="flow" fill="none"/>
+      <polygon points="240,73 231,68 231,78" fill="#0E7C86"/>
+    </svg>
+    <figcaption>Fig. 1 — Two of three layers are open standards. The changelog — the layer in motion — is still a mix of tool dialects.</figcaption>
+  </figure>
+
+  <p>Change data capture (CDC) has become the connective tissue of the modern data estate. Every insert, update, delete, and schema change streams out of operational databases as it happens, feeding lakehouses, real-time analytics, replication, and event-driven systems. For the most part, the capture part works fine — consumers have lots of choice between open-source and commercial tool vendors. The problem is that every CDC engine, database, and ingest layer speaks its own dialect (formats, types, protocols, semantics, and so on).</p>
+
+  <p>Event formats differ. Type encodings differ. Ordering guarantees, transaction semantics, and schema-change handling all differ. So every producer-consumer pairing becomes a bespoke integration project, and the industry keeps rebuilding the same N×M connector matrix, but in their own boutique, proprietary way that creates a closed ecosystem around their product. Each engine, wired to each downstream platform, with fidelity quietly lost at every seam. Each platform seam is opaque and hard to reason about. Truncated decimals. Ambiguous timestamps. Mysterious timezones. Dropped transaction boundaries. DDL handled as an afterthought. Customers pay for this as lock-in and fragile pipelines. Vendors pay for it as duplicated engineering that differentiates no one.</p>
+
+  <p>An open changelog format replaces the fragmented ecosystem of bespoke N×M matrices with a wire contract, the same way open table formats replaced per-engine table management. A working group has a draft on the table — a specification currently called OpenCDC — that specifies the structure, semantics, ordering, type fidelity, and lifecycle of the events a CDC producer emits, precisely enough that a consumer can interpret any conformant stream without knowing which engine produced it. It standardizes the events, not the engines. Your capture tool stays; its output becomes portable.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left: a mesh of bespoke translations between tools and sinks. Right: the same estate through one wire standard.">
+      <style>
+        .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;fill:#182028}
+        .sub{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#5B6873}
+        .box{fill:#FFFFFF;stroke:#D8DFE3;stroke-width:1;rx:3}
+        .mesh{stroke:#B9C4CA;stroke-width:1}
+        .wireln{stroke:#0E7C86;stroke-width:1.6}
+        .hub{fill:#0E7C86}
+      </style>
+      <!-- LEFT: mesh -->
+      <text x="90" y="26" class="sub">TODAY: N×M TRANSLATIONS</text>
+      <rect x="30" y="50" width="92" height="26" class="box"/><text x="40" y="67" class="lbl">Tool A</text>
+      <rect x="30" y="105" width="92" height="26" class="box"/><text x="40" y="122" class="lbl">Tool B</text>
+      <rect x="30" y="160" width="92" height="26" class="box"/><text x="40" y="177" class="lbl">Tool C</text>
+      <rect x="215" y="50" width="105" height="26" class="box"/><text x="225" y="67" class="lbl">Lakehouse</text>
+      <rect x="215" y="105" width="105" height="26" class="box"/><text x="225" y="122" class="lbl">Analytics</text>
+      <rect x="215" y="160" width="105" height="26" class="box"/><text x="225" y="177" class="lbl">Replica DB</text>
+      <line x1="122" y1="63"  x2="215" y2="63"  class="mesh"/>
+      <line x1="122" y1="63"  x2="215" y2="118" class="mesh"/>
+      <line x1="122" y1="63"  x2="215" y2="173" class="mesh"/>
+      <line x1="122" y1="118" x2="215" y2="63"  class="mesh"/>
+      <line x1="122" y1="118" x2="215" y2="118" class="mesh"/>
+      <line x1="122" y1="118" x2="215" y2="173" class="mesh"/>
+      <line x1="122" y1="173" x2="215" y2="63"  class="mesh"/>
+      <line x1="122" y1="173" x2="215" y2="118" class="mesh"/>
+      <line x1="122" y1="173" x2="215" y2="173" class="mesh"/>
+      <text x="63" y="225" class="sub">9 bespoke adapters,</text>
+      <text x="63" y="240" class="sub">fidelity lost at each seam</text>
+      <!-- divider -->
+      <line x1="360" y1="30" x2="360" y2="230" stroke="#D8DFE3" stroke-width="1" stroke-dasharray="3 4"/>
+      <!-- RIGHT: wire contract -->
+      <text x="410" y="26" class="sub">WITH AN OPEN CHANGELOG FORMAT</text>
+      <rect x="390" y="50" width="92" height="26" class="box"/><text x="400" y="67" class="lbl">Tool A</text>
+      <rect x="390" y="105" width="92" height="26" class="box"/><text x="400" y="122" class="lbl">Tool B</text>
+      <rect x="390" y="160" width="92" height="26" class="box"/><text x="400" y="177" class="lbl">Tool C</text>
+      <rect x="540" y="98" width="8" height="40" class="hub" rx="2"/>
+      <text x="516" y="90" class="lbl" fill="#0E7C86">one wire</text>
+      <rect x="588" y="50" width="100" height="26" class="box"/><text x="598" y="67" class="lbl">Lakehouse</text>
+      <rect x="588" y="105" width="100" height="26" class="box"/><text x="598" y="122" class="lbl">Analytics</text>
+      <rect x="588" y="160" width="100" height="26" class="box"/><text x="598" y="173" class="lbl">Replica DB</text>
+      <line x1="482" y1="63"  x2="540" y2="110" class="wireln"/>
+      <line x1="482" y1="118" x2="540" y2="118" class="wireln"/>
+      <line x1="482" y1="173" x2="540" y2="126" class="wireln"/>
+      <line x1="548" y1="110" x2="588" y2="63"  class="wireln"/>
+      <line x1="548" y1="118" x2="588" y2="118" class="wireln"/>
+      <line x1="548" y1="126" x2="588" y2="173" class="wireln"/>
+      <text x="452" y="225" class="sub">Any conformant producer feeds</text>
+      <text x="452" y="240" class="sub">any conformant consumer</text>
+    </svg>
+    <figcaption>Fig. 2 — The connector matrix the industry keeps rebuilding, and the wire contract that replaces it.</figcaption>
+  </figure>
+
+  <h2>What a changelog event looks like</h2>
+
+  <p>Before the principles, here's the thing itself. As defined in the specification today, every event is a fully conformant CloudEvent — the CNCF envelope standard already used across the event-driven ecosystem — extended with CDC-specific attributes, carrying a change payload. Three layers, each with a clear purpose.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Layered box diagram: a CloudEvents envelope wrapping changelog extension attributes wrapping the change payload.">
+      <style>
+        .t{font-family:'IBM Plex Mono',monospace;font-size:11px;fill:#182028}
+        .h{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;fill:#182028}
+        .m{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#5B6873}
+        .call{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#0E7C86}
+      </style>
+      <!-- Layer 1: envelope -->
+      <rect x="20" y="20" width="450" height="290" fill="#FFFFFF" stroke="#0E7C86" stroke-width="1.5" rx="6"/>
+      <text x="36" y="44" class="h">CloudEvents envelope</text>
+      <text x="36" y="66" class="t">id · source · type · time · dataschema</text>
+      <!-- Layer 2: extensions -->
+      <rect x="36" y="82" width="418" height="212" fill="#F7F9FA" stroke="#C77D00" stroke-width="1.2" rx="5"/>
+      <text x="52" y="106" class="h">Changelog extension attributes</text>
+      <text x="52" y="128" class="t">cdcxid · cdctxorder · position fields</text>
+      <!-- Layer 3: payload -->
+      <rect x="52" y="144" width="386" height="134" fill="#FFFFFF" stroke="#D8DFE3" rx="4"/>
+      <text x="68" y="168" class="h">Change payload (UPDATE)</text>
+      <text x="68" y="190" class="t">before: { status: "pending" }</text>
+      <text x="68" y="208" class="t">after:  { status: "shipped" }</text>
+      <text x="68" y="226" class="t">changed_columns: ["status"]</text>
+      <text x="68" y="244" class="t">_null_columns · _lob_overflow</text>
+      <text x="68" y="266" class="m">validated against a closed-world schema</text>
+      <!-- Callouts -->
+      <line x1="470" y1="55" x2="510" y2="55" stroke="#0E7C86" stroke-width="1"/>
+      <text x="516" y="50" class="call">Identity, routing, and a</text>
+      <text x="516" y="63" class="call">pointer to the schema</text>
+      <line x1="454" y1="117" x2="510" y2="117" stroke="#C77D00" stroke-width="1"/>
+      <text x="516" y="112" class="call">Which transaction, what</text>
+      <text x="516" y="125" class="call">order, where in the stream</text>
+      <line x1="438" y1="205" x2="510" y2="205" stroke="#5B6873" stroke-width="1"/>
+      <text x="516" y="200" class="call">The change itself, with</text>
+      <text x="516" y="213" class="call">explicit before/after and</text>
+      <text x="516" y="226" class="call">LOB/null state signaling</text>
+    </svg>
+    <figcaption>Fig. 3 — Anatomy of an event. Envelope for identity, extensions for transaction context, payload for the change.</figcaption>
+  </figure>
+
+  <p>Everything here is readable with a JSON parser and the specification document. JSON is a minimal conformance requirement, but it is not the only syntax the spec can and will support.</p>
+
+  <h2>The design principles that make it work</h2>
+
+  <p>The spec document opens with its design principles, and every normative decision (e.g., in the Architecture Decision Record) traces back to them. Four major themes matter most if you're evaluating an open changelog as a consumer of change data.</p>
+
+  <h3>Nothing to install, nothing to ask</h3>
+
+  <p>A conformant stream must be fully consumable with only a parser and the spec. No broker, no schema registry, no SDK, no vendor tooling. Infrastructure like a registry is allowed as an optimization, but it can never be required.</p>
+
+  <p>That works because the stream describes itself. Schemas are first-class events: an <code>OBJECT_METADATA</code> event declares a table's complete structure before any data for that table flows, and any change to the emitted schema produces a new declaration before data flows under it. In this way, every data event points back to its governing schema through the envelope's <code>dataschema</code> field.</p>
+
+  <p>The practical consequence: your consumer can be built by a different team, on a different stack, years later, and it still decodes the stream from the stream alone.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Event timeline: schema events precede the data events that reference them, including after a schema change.">
+      <style>
+        .ev{font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:#182028}
+        .sm{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#5B6873}
+        .schema{fill:#FFFFFF;stroke:#0E7C86;stroke-width:1.5;rx:3}
+        .data{fill:#FFFFFF;stroke:#D8DFE3;stroke-width:1;rx:3}
+        .ref{stroke:#0E7C86;stroke-width:1;fill:none;stroke-dasharray:3 3}
+      </style>
+      <line x1="30" y1="100" x2="670" y2="100" stroke="#D8DFE3" stroke-width="1"/>
+      <polygon points="670,100 662,96 662,104" fill="#D8DFE3"/>
+      <rect x="40"  y="82" width="104" height="36" class="schema"/><text x="48" y="98" class="ev">OBJECT_METADATA</text><text x="48" y="111" class="ev">schema v1</text>
+      <rect x="160" y="82" width="60" height="36" class="data"/><text x="170" y="104" class="ev">INSERT</text>
+      <rect x="236" y="82" width="60" height="36" class="data"/><text x="246" y="104" class="ev">UPDATE</text>
+      <rect x="312" y="82" width="60" height="36" class="data"/><text x="322" y="104" class="ev">DELETE</text>
+      <rect x="396" y="82" width="104" height="36" class="schema"/><text x="404" y="98" class="ev">OBJECT_METADATA</text><text x="404" y="111" class="ev">schema v2</text>
+      <rect x="516" y="82" width="60" height="36" class="data"/><text x="526" y="104" class="ev">INSERT</text>
+      <rect x="592" y="82" width="60" height="36" class="data"/><text x="602" y="104" class="ev">UPDATE</text>
+      <path d="M 190 82 Q 190 45 100 45 Q 92 45 92 78" class="ref"/><polygon points="92,80 88,72 96,72" fill="#0E7C86"/>
+      <path d="M 266 82 Q 266 35 100 35 Q 84 35 84 78" class="ref"/>
+      <path d="M 342 82 Q 342 25 100 25 Q 76 25 76 78" class="ref"/>
+      <path d="M 546 82 Q 546 45 456 45 Q 448 45 448 78" class="ref"/><polygon points="448,80 444,72 452,72" fill="#0E7C86"/>
+      <path d="M 622 82 Q 622 35 456 35 Q 440 35 440 78" class="ref"/>
+      <text x="40" y="150" class="sm">Schema precedes data. A schema change emits a new declaration before</text>
+      <text x="40" y="165" class="sm">any data flows under it. Each event's dataschema points to its schema.</text>
+    </svg>
+    <figcaption>Fig. 4 — A self-describing stream. No out-of-band schema distribution, ever.</figcaption>
+  </figure>
+
+  <h3>Streams that state their guarantees</h3>
+
+  <p>This is the part most CDC formats never attempted, mainly because they were always tied to specific (known ahead of time) tooling. Instead of letting consumers assume what a stream guarantees, the producer declares it in the stream, using a <code>STREAM_METADATA</code> event, along independent capability axes. Two of those axes govern transaction ordering, which are important to understand in more detail.</p>
+
+  <p><strong>Does the producer emit one ordered sequence, or several?</strong> That's <code>ordering_scope</code>. A value of <code>"stream"</code> means one totally ordered sequence — every event has a definite position relative to every other event: <span class="shape">[e1, e2, e3, e4, …]</span>. A value of <code>"channel"</code> means several ordered sequences, say one per table: <span class="shape">A:[a1, a2, a3]&nbsp; B:[b1, b2]</span>. Order holds within each channel; between channels it isn't stated, and consumers build no logic on it. That is the entire claim: one sequence or several.</p>
+
+  <p><strong>When transactions overlap, do their events stay grouped?</strong> That's <code>transaction_interleaving</code>. A value of <code>"none"</code> means transactions are emitted whole, one after another: <span class="shape">[T1, T1, T1] [T2, T2]</span>. A value of <code>"possible"</code> means events from different transactions may mix: <span class="shape">[T1, T2, T1, T3, T2, …]</span>. Each transaction stays internally ordered, but the transactions overlap. That is the entire claim: contiguous or not.</p>
+
+  <p>When interleaving is possible, ordering alone can no longer tell a consumer that a transaction is complete — so the spec makes explicit <code>TRX_COMMIT</code> markers mandatory for every transaction. Completion becomes deterministic. No timeouts, no guessing.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two-by-two grid of ordering_scope by transaction_interleaving, with an event-shape strip in each cell and marker badges on the interleaving column.">
+      <style>
+        .ax{font-family:'IBM Plex Mono',monospace;font-size:11px;fill:#182028;font-weight:500}
+        .axv{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#5B6873}
+        .sh{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#182028}
+        .nt{font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:#5B6873}
+        .cell{fill:#FFFFFF;stroke:#D8DFE3;rx:5}
+        .badge{fill:#C77D00}
+        .badgetxt{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:#FFFFFF;font-weight:500}
+      </style>
+      <text x="290" y="24" class="ax">transaction_interleaving</text>
+      <text x="215" y="46" class="axv">"none"</text>
+      <text x="480" y="46" class="axv">"possible"</text>
+      <text x="30" y="150" class="ax" transform="rotate(-90 30 150)">ordering_scope</text>
+      <text x="52" y="120" class="axv" transform="rotate(-90 52 120)">"stream"</text>
+      <text x="52" y="270" class="axv" transform="rotate(-90 52 270)">"channel"</text>
+      <rect x="70" y="58" width="300" height="120" class="cell"/>
+      <text x="86" y="86" class="sh">[T1, T1, T1] [T2, T2] [T3, …]</text>
+      <text x="86" y="112" class="nt">One total order, transactions whole.</text>
+      <text x="86" y="127" class="nt">Completion read from ordering itself</text>
+      <text x="86" y="142" class="nt">(next transaction id, or HEARTBEAT).</text>
+      <rect x="380" y="58" width="300" height="120" class="cell"/>
+      <text x="396" y="86" class="sh">[T1, T2, T1, T3, T2, …]</text>
+      <text x="396" y="112" class="nt">One total order, transactions mixed.</text>
+      <text x="396" y="127" class="nt">Ordering can't signal completion.</text>
+      <rect x="396" y="140" width="152" height="20" class="badge" rx="10"/>
+      <text x="406" y="154" class="badgetxt">TRX_COMMIT REQUIRED</text>
+      <rect x="70" y="192" width="300" height="120" class="cell"/>
+      <text x="86" y="220" class="sh">A:[T1, T1] [T3]  B:[T2, T2]</text>
+      <text x="86" y="246" class="nt">Several ordered channels, each</text>
+      <text x="86" y="261" class="nt">transaction whole within one channel.</text>
+      <text x="86" y="276" class="nt">Per-channel completion via ordering.</text>
+      <rect x="380" y="192" width="300" height="120" class="cell"/>
+      <text x="396" y="220" class="sh">A:[T1, T2, T1…]  B:[T2, T3…]</text>
+      <text x="396" y="246" class="nt">Several channels, transactions mixed.</text>
+      <text x="396" y="261" class="nt">The canonical decoupled deployment.</text>
+      <rect x="396" y="274" width="152" height="20" class="badge" rx="10"/>
+      <text x="406" y="288" class="badgetxt">TRX_COMMIT REQUIRED</text>
+      <text x="70" y="332" class="nt">All four combinations are legal and declarable. Interleaving without markers is non-conformant.</text>
+    </svg>
+    <figcaption>Fig. 5 — The two ordering axes. The producer declares its cell; consumer strategy follows from the declaration, not from guesswork.</figcaption>
+  </figure>
+
+  <p>One scoping decision is important to fully understand: the specification is focused on what the producer can guarantee, not on what a particular message transport has implemented. The specification itself is designed to be transport-neutral. Therefore, these axes describe what the producer emits, not what arrives after a broker or transport has handled the stream. That's what lets a connector-style producer make an honest, testable claim: it can declare exactly what it emits even when it doesn't control delivery. End-to-end guarantees across specific transports are the job of binding profiles, which are on the roadmap — more on that below.</p>
+
+  <h3>No translation layer, no surprise fields</h3>
+
+  <p>Two principles form the interoperability backbone. First: any event that requires consumer-side knowledge of the originating vendor to decode is non-conformant. Full stop. Independently built producers and consumers from different vendors must be able to exchange events with no translation layer between them.</p>
+
+  <p>Second: every schema ships closed-world, for example in the specification with <code>additionalProperties: false</code>. If a field shows up in a payload that wasn't declared in the schema, that's a validation failure, not a warning. It sounds strict because it is. The payoff is a contract precise enough to build against: if a field appears, it was declared; if it wasn't declared, the producer is broken, and your validator says so.</p>
+
+  <h3>Source-neutral, encoding-neutral</h3>
+
+  <p>The core standard contains no Oracle-specific, DB2-specific, MySQL-specific, or PostgreSQL-specific constructs. Schema evolution follows the same self-sufficiency rule as everything else: detectable by reading the stream, with no polling or database introspection. <code>OBJECT_METADATA</code> carries that guarantee unconditionally on every conformant stream. Producers that can see source DDL can additionally declare a <code>ddl_capture</code> capability and emit DDL events with provenance — the DDL operation's kind, the verbatim statement where available, its exact position in transaction order.</p>
+
+  <p>And JSON, despite appearing in every example, is the normative example format rather than the mandatory wire encoding. Avro, Protobuf, Arrow IPC — all conformant, provided the logical structure, field semantics, and type rules are preserved. High-throughput deployments get binary efficiency; the spec stays verifiable with a text editor.</p>
+
+  <h2>Types that don't lie</h2>
+
+  <p>Type handling is where CDC pipelines quietly lose data today — though not the way you might guess. Every CDC connector already normalizes types; that's the job. The problem is that each one normalizes into its own private vocabulary, shaped by its own configuration, and usually throws the source declaration away. The same timestamp column reaches a consumer as epoch microseconds from one tool, epoch milliseconds from the same tool under a different setting, and an ISO-8601 string from a third. Telling them apart means recognizing the producer's private schema names — exactly the vendor knowledge a portable format must not require. And when that consumer needs to create the table downstream, the original declaration is gone: <code>NUMBER(10,2)</code> arrived as "some kind of decimal," <code>VARCHAR2(20 BYTE)</code> as "a string," and the target schema is a guess.</p>
+
+  <p>The spec's answer is to make every column carry two layers of type information, because the two failures above are different failures. <code>logical_type</code> holds a name from one canonical vocabulary, shared by every producer, and it drives interpretation: consumers route, validate, and map without parsing engine-specific DDL — that's what heterogeneous pipelines need, an Oracle change landing in Iceberg or Postgres with nothing lost in translation. <code>source_type</code> holds the verbatim DDL declaration from the originating engine — <code>NUMBER(10,2)</code>, <code>VARCHAR2(20 BYTE)</code> — never interpreted, never normalized, so a consumer that knows the source engine can reconstruct exact semantics, and a like-for-like replica can be built from the declaration instead of a guess. Fidelity and interoperability, carried together instead of traded off.</p>
+
+  <p>Real engines make this harder than it sounds. The same type name can mean different things on different engines. Some types exist on one engine and nowhere else. Precision and ranges rarely line up. The spec's stance on all of it is consistent: carry the difference explicitly instead of papering over it, and never change a value silently to make it fit a cleaner model. Exactly how each case is represented — which types earn a shared canonical name, how engine-only types travel — is active working-group territory, being refined against real engines rather than settled in the abstract. The commitment underneath doesn't move: a consumer can read a conformant stream correctly without knowing which engine produced it, and what the source declared survives the trip.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A column descriptor carries source_type verbatim from the source engine and logical_type from the canonical vocabulary; consumers interpret using logical_type.">
+  <style>
+    .h{font-family:'Space Grotesk','DejaVu Sans',sans-serif;font-size:12px;font-weight:700;fill:#182028}
+    .t{font-family:'IBM Plex Mono','DejaVu Sans Mono',Consolas,monospace;font-size:10.5px;fill:#182028}
+    .k{font-family:'IBM Plex Mono','DejaVu Sans Mono',Consolas,monospace;font-size:10.5px;fill:#0E7C86}
+    .m{font-family:'IBM Plex Mono','DejaVu Sans Mono',Consolas,monospace;font-size:9.5px;fill:#5B6873}
+    .card{fill:#FFFFFF;stroke:#D8DFE3;stroke-width:1.2;rx:6}
+    .flow{stroke:#0E7C86;stroke-width:1.6;fill:none}
+    .flow2{stroke:#C77D00;stroke-width:1.6;fill:none}
+  </style>
+  <!-- source engine (caption contained in the box) -->
+  <rect x="22" y="70" width="164" height="166" class="card"/>
+  <text x="38" y="98" class="h">Source engine</text>
+  <text x="38" y="128" class="m">verbatim DDL,</text>
+  <text x="38" y="142" class="m">never normalized —</text>
+  <text x="38" y="156" class="m">replicas built from</text>
+  <text x="38" y="170" class="m">the declaration,</text>
+  <text x="38" y="184" class="m">not a guess</text>
+  <!-- descriptor card -->
+  <rect x="220" y="34" width="270" height="232" class="card" stroke="#0E7C86" stroke-width="1.5"/>
+  <text x="238" y="60" class="h">Column descriptors (OBJECT_METADATA)</text>
+  <text x="238" y="90"  class="t">"AMOUNT":</text>
+  <text x="252" y="108" class="k">source_type:  "NUMBER(10,2)"</text>
+  <text x="252" y="126" class="k">logical_type: "DECIMAL"</text>
+  <text x="252" y="144" class="m">parameters: {precision:10, scale:2}</text>
+  <text x="238" y="176" class="t">"NOTE":</text>
+  <text x="252" y="194" class="k">source_type:  "VARCHAR2(20 BYTE)"</text>
+  <text x="252" y="212" class="k">logical_type: "STRING"</text>
+  <text x="252" y="230" class="m">the engine's dialect in,</text>
+  <text x="252" y="244" class="m">one shared name out</text>
+  <!-- consumer (caption contained in the box) -->
+  <rect x="518" y="70" width="160" height="166" class="card"/>
+  <text x="534" y="98" class="h">Any consumer</text>
+  <text x="534" y="128" class="m">all interpretation</text>
+  <text x="534" y="142" class="m">via logical_type —</text>
+  <text x="534" y="156" class="m">one shared</text>
+  <text x="534" y="170" class="m">vocabulary,</text>
+  <text x="534" y="184" class="m">not one per tool</text>
+  <!-- arrows -->
+  <path d="M 186 150 L 220 150" class="flow"/>
+  <polygon points="220,150 211,145 211,155" fill="#0E7C86"/>
+  <path d="M 490 150 L 518 150" class="flow2"/>
+  <polygon points="518,150 509,145 509,155" fill="#C77D00"/>
+</svg>
+    <figcaption>Fig. 6 — Two layers per column. source_type preserves provenance; logical_type drives interpretation. Neither is sacrificed for the other.</figcaption>
+  </figure>
+
+  <h2>What conformance actually means</h2>
+
+  <p>"OpenCDC conformant" needs to be a testable claim, so the spec defines a Minimum Viable Interoperability Profile: the floor every conformant implementation must clear, covering DML semantics, mandatory schema delivery, the canonical type system, stable event identity for replay, transaction ordering, and stream liveness. Behind the spec's prose sits a machine-readable requirements register from which the conformance matrix is generated and CI-verified against the spec body on every change. If the document and the register drift, the build fails.</p>
+
+  <h2>Where the working group is headed</h2>
+
+  <p>The specification is still a draft and the working group has a path forward. Transport binding profiles are one of the biggest items: the current spec already carries informative Kafka consumption guidance as a deliberate precursor to a normative Kafka binding, and bindings are where delivered-stream guarantees — what survives a specific transport, end to end — get their formal home. A bidirectional interoperability profile is in active design, targeting cross-vendor two-way replication with loop suppression, with multiple candidate approaches under working-group review. Snapshot and initial-load semantics are slated for additional work to flesh out the details required to include them in the specification. And as the spec approaches v1.0, the group is preparing it for a standards-track home, with its CloudEvents lineage as the natural foundation.</p>
+
+  <p>Draft status is a feature right now. There are no shipped implementations to migrate, which means feedback today is the cheapest feedback the project will ever get. If you build databases, build pipelines, run a lakehouse, operate replication, or ship a CDC tool, the working group wants your input — especially on the capability axes and the minimum profile, where real-world deployment shapes matter most.</p>
+
+  <div class="cta">
+    <p><strong>Get involved.</strong> The specification, type system, payload examples, JSON schemas, and requirements register are all in the open at the OpenCDC repository. Start with §1 Quick Start and §2 Design Principles, then tell us what breaks in your world.</p>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>OpenCDC Working Group · Draft v0.7.0 · Wire protocol 0.3 · Built on CloudEvents v1.1</p>
+  </div>
+</footer>
+
 </body>
 </html>
